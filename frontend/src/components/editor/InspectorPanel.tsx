@@ -1,11 +1,11 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { Save } from "lucide-react";
+import { Save, X } from "lucide-react";
 
 import { useAppStore } from "@/lib/store";
 
-export function InspectorPanel() {
+export function InspectorPanel({ onClose }: { onClose?: () => void }) {
   const {
     editableFiles,
     inspectorPath,
@@ -25,14 +25,25 @@ export function InspectorPanel() {
           </p>
           <h2 className="text-lg font-semibold tracking-[-0.04em]">Memory / Skills / Prompt</h2>
         </div>
-        <button
-          className="flex items-center gap-2 rounded-full bg-[rgba(15,139,141,0.12)] px-4 py-2 text-sm text-ocean"
-          onClick={() => void saveInspector()}
-          type="button"
-        >
-          <Save size={16} />
-          {inspectorDirty ? "保存修改" : "已同步"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            className="flex items-center gap-2 rounded-full bg-[rgba(15,139,141,0.12)] px-4 py-2 text-sm text-ocean"
+            onClick={() => void saveInspector()}
+            type="button"
+          >
+            <Save size={16} />
+            {inspectorDirty ? "保存修改" : "已同步"}
+          </button>
+          {onClose && (
+            <button
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/60 text-[var(--color-ink-soft)] hover:bg-white/80"
+              onClick={onClose}
+              type="button"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -52,10 +63,10 @@ export function InspectorPanel() {
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-[26px] border border-[var(--color-line)]">
+      <div className="flex-1 overflow-hidden rounded-[26px] border border-[var(--color-line)]">
         <Editor
           defaultLanguage="markdown"
-          height="calc(100vh - 270px)"
+          height="100%"
           onChange={(value) => updateInspectorContent(value ?? "")}
           options={{
             fontFamily: "var(--font-mono)",

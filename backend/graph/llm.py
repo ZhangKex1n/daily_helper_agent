@@ -23,6 +23,7 @@ class ResolvedLLMConfig:
     api_key: str | None
     base_url: str
     temperature: float = 0.6
+    streaming: bool = False
 
 
 @dataclass(frozen=True)
@@ -40,12 +41,16 @@ def _ensure_api_key(config: ResolvedLLMConfig) -> None:
 
 def _build_openai_compatible_chat(config: ResolvedLLMConfig) -> BaseChatModel:
     _ensure_api_key(config)
+    kwargs: dict = {}
+    if config.streaming:
+        kwargs["stream_options"] = {"include_usage": True}
     return ChatOpenAI(
         model=config.model,
         api_key=config.api_key,
         base_url=config.base_url,
         temperature=config.temperature,
-        stream_options={"include_usage": True} 
+        streaming=config.streaming,
+        **kwargs,
     )
 
 
@@ -87,13 +92,19 @@ LLM_REGISTRY: Dict[str, Callable[[ResolvedLLMConfig], BaseChatModel]] = {
 }
 
 
-def build_llm_config_from_settings(settings: Settings, *, temperature: float = 0.0) -> ResolvedLLMConfig:
+def build_llm_config_from_settings(
+    settings: Settings,
+    *,
+    temperature: float = 0.0,
+    streaming: bool = False,
+) -> ResolvedLLMConfig:
     return ResolvedLLMConfig(
         provider=settings.llm_provider,
         model=settings.llm_model,
         api_key=settings.llm_api_key,
         base_url=settings.llm_base_url,
         temperature=temperature,
+        streaming=streaming,
     )
 
 

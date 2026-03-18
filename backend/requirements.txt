@@ -15,5 +15,8 @@ langgraph-checkpoint-postgres>=2.0.0
 # Chroma for long-term memory vector store
 chromadb>=0.4.0
 langchain-chroma>=0.1.0
+# memory_module_v2: BM25 keyword retrieval + Chinese tokenizer
+rank-bm25>=0.2.2
+jieba>=0.42.1
 # llama-index-core>=0.12.0,<0.13.0
 # llama-index-embeddings-openai>=0.3.0,<0.4.0

@@ -30,15 +30,22 @@ export function ChatMessage({
     >
       {!isUser && <RetrievalCard results={retrievals} />}
       {!isUser && <ThoughtChain toolCalls={toolCalls} />}
-      <div className={isUser ? "whitespace-pre-wrap leading-7" : "markdown"}>
-        {isUser ? (
-          content
-        ) : (
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {content || "正在思考..."}
-          </ReactMarkdown>
-        )}
-      </div>
+      {(!isUser && toolCalls.length > 0 && (!content || content.trim() === "") && !toolCalls.some(tc => tc.output === content)) ? null : (
+        (content && content.trim() !== "" && (!toolCalls.length || !toolCalls.some(tc => tc.output.trim() === content.trim()))) && (
+          <div className={isUser ? "whitespace-pre-wrap leading-7" : "markdown"}>
+            {isUser ? (
+              content
+            ) : (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {content}
+              </ReactMarkdown>
+            )}
+          </div>
+        )
+      )}
+      {!isUser && (!content || content.trim() === "") && !toolCalls.length && (
+        <div className="text-[var(--color-ink-soft)]">正在思考...</div>
+      )}
     </article>
   );
 }

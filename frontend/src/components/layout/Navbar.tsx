@@ -1,10 +1,20 @@
 "use client";
 
-import { Database, FileStack, Plus, Sparkles, Wrench } from "lucide-react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { Database, FileStack, Plus, Sparkles, Wrench, SlidersHorizontal } from "lucide-react";
 
 import { useAppStore } from "@/lib/store";
+import { InspectorPanel } from "@/components/editor/InspectorPanel";
 
 export function Navbar() {
+  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const {
     createNewSession,
     ragMode,
@@ -55,7 +65,7 @@ export function Navbar() {
           <Plus size={16} />
           新会话
         </button>
-        <button
+        {/* <button
           className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm ${
             ragMode
               ? "bg-ocean text-white"
@@ -66,20 +76,41 @@ export function Navbar() {
         >
           <Database size={16} />
           {ragMode ? "RAG 已开" : "RAG 已关"}
-        </button>
-        <button
+        </button> */}
+        {/* <button
           className="flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-white/60 px-4 py-2 text-sm"
           onClick={() => void compressCurrentSession()}
           type="button"
         >
           <Wrench size={16} />
           压缩
-        </button>
+        </button> */}
         <div className="hidden items-center gap-2 rounded-full bg-[rgba(212,106,74,0.12)] px-4 py-2 text-sm text-[var(--color-ember)] md:flex">
           <FileStack size={16} />
           File-first Memory
         </div>
+        <button
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-line)] bg-white/60 text-[var(--color-ink-soft)] hover:bg-white/80 hover:text-ink"
+          onClick={() => setIsInspectorOpen(true)}
+          title="Open Inspector"
+          type="button"
+        >
+          <SlidersHorizontal size={16} />
+        </button>
       </div>
+
+      {isInspectorOpen && mounted && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+            onClick={() => setIsInspectorOpen(false)}
+          />
+          <div className="relative z-10 flex h-[80vh] w-[90vw] max-w-4xl flex-col shadow-2xl">
+            <InspectorPanel onClose={() => setIsInspectorOpen(false)} />
+          </div>
+        </div>,
+        document.body
+      )}
     </header>
   );
 }

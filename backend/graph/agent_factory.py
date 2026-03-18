@@ -61,17 +61,15 @@ def build_agent_config(
     base_dir: Path,
     tools: list[BaseTool],
     *,
-    rag_mode: bool = False,
     use_checkpointer: bool = True,
     use_summarization: bool | None = None,
 ) -> AgentConfig:
     """从当前运行配置与 base_dir、tools 构建 AgentConfig。"""
-    from config import get_settings, runtime_config
+    from config import get_settings
 
     settings = get_settings()
-    rag = rag_mode if base_dir else runtime_config.get_rag_mode()
-    prompt = build_system_prompt(base_dir, rag) if base_dir else ""
-    llm = get_llm(build_llm_config_from_settings(settings, temperature=0.0))
+    prompt = build_system_prompt(base_dir) if base_dir else ""
+    llm = get_llm(build_llm_config_from_settings(settings, temperature=0.0, streaming=True))
     checkpointer = get_checkpointer() if use_checkpointer else None
     if use_summarization is None:
         use_summarization = os.getenv("SUMMARIZATION_ENABLED", "false").strip().lower() in ("true", "1", "yes")

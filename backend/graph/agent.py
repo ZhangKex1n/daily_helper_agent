@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+import logging
+
 from config import get_settings, runtime_config
 from graph.context import RequestContext
 from graph.agent_factory import build_agent_config, create_agent_from_config
@@ -11,6 +13,10 @@ from service.memory_indexer import memory_indexer
 from service.session_manager import SessionManager
 from graph.llm import build_llm_config_from_settings, get_llm
 from tools import get_all_tools
+from memory_module_v2.service.config import get_memory_backend, get_memory_v2_inject_mode
+from memory_module_v2.integrations.middleware import build_memory_context
+
+logger = logging.getLogger(__name__)
 
 
 def _stringify_content(content: Any) -> str:
@@ -36,9 +42,10 @@ class AgentManager:
         self.session_manager = SessionManager(base_dir)
         self.tools = get_all_tools(base_dir)
 
+    # 用于generate_title()和summarize_history()
     def _build_chat_model(self):
         settings = get_settings()
-        llm_config = build_llm_config_from_settings(settings, temperature=0.0)
+        llm_config = build_llm_config_from_settings(settings, temperature=0.0, streaming=False)
         return get_llm(llm_config)
 
     def _build_agent(self):
@@ -80,10 +87,11 @@ class AgentManager:
         if self.base_dir is None:
             raise RuntimeError("AgentManager is not initialized")
 
-        # 短期记忆由 checkpointer 负责，本轮只传本条及本轮的 RAG 注入
-        rag_mode = runtime_config.get_rag_mode()
+        memory_backend = get_memory_backend()
         turn_messages: list[dict[str, str]] = []
-        if rag_mode:
+
+        if memory_backend == "v1":
+            # v1: Chroma / MEMORY.md RAG injection
             retrievals = memory_indexer.retrieve(message, top_k=3)
             yield {"type": "retrieval", "query": message, "results": retrievals}
             if retrievals:
@@ -93,6 +101,21 @@ class AgentManager:
                         "content": self._format_retrieval_context(retrievals),
                     }
                 )
+        elif memory_backend == "v2" and get_memory_v2_inject_mode() == "always":
+            # v2 forced injection: search every turn, prepend to prompt
+            try:
+                v2_context = build_memory_context(message)
+                if v2_context:
+                    yield {"type": "retrieval_v2", "query": message, "context": v2_context}
+                    turn_messages.append(
+                        {"role": "assistant", "content": v2_context}
+                    )
+            except Exception as v2_exc:
+                logger.warning("Memory v2 forced injection failed: %s", v2_exc)
+        # When memory_backend == "v2" and inject_mode == "tool":
+        #   search_memory is registered as a tool in get_all_tools(),
+        #   the agent decides when to call it autonomously.
+
         turn_messages.append({"role": "user", "content": message})
 
         agent = self._build_agent()

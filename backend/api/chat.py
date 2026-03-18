@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 import traceback
 from typing import Any
 
@@ -10,6 +12,9 @@ from pydantic import BaseModel, Field
 
 from graph.context import build_request_context
 from graph.agent import agent_manager
+from memory_module_v2.service.config import get_memory_backend
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -88,13 +93,19 @@ async def chat(payload: ChatRequest):
                 data = {key: value for key, value in event.items() if key != "type"}
                 yield _sse(event_type, data)
 
-                if event_type == "done" and is_first_user_message:
-                    title = await agent_manager.generate_title(payload.message)
-                    session_manager.set_title(payload.session_id, title)
-                    yield _sse(
-                        "title",
-                        {"session_id": payload.session_id, "title": title},
-                    )
+                if event_type == "done":
+                    if is_first_user_message:
+                        title = await agent_manager.generate_title(payload.message)
+                        session_manager.set_title(payload.session_id, title)
+                        yield _sse(
+                            "title",
+                            {"session_id": payload.session_id, "title": title},
+                        )
+
+                    if get_memory_backend() == "v2":
+                        asyncio.create_task(
+                            _distill_session_background(payload.session_id)
+                        )
         except Exception as exc:
             print("[chat] error in event_generator", repr(exc))
             traceback.print_exc()
@@ -108,3 +119,30 @@ async def chat(payload: ChatRequest):
         if raw_event.startswith("event: done"):
             final_text = raw_event
     return JSONResponse({"content": final_text})
+
+
+async def _distill_session_background(session_id: str) -> None:
+    """Run distillation in background after conversation ends.
+
+    Idempotent: only processes new exchanges (deterministic exchange_id).
+    Uses DISTILL_PROVIDER/MODEL if configured, otherwise falls back to main LLM.
+    """
+    try:
+        from memory_module_v2.service.api import distill_session
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, distill_session, session_id)
+        if result.exchanges_new > 0:
+            logger.info(
+                "Distilled session %s: %d new exchanges → %d objects",
+                session_id[:12],
+                result.exchanges_new,
+                result.objects_created,
+            )
+        if result.errors:
+            logger.warning(
+                "Distillation errors for session %s: %d",
+                session_id[:12],
+                len(result.errors),
+            )
+    except Exception as exc:
+        logger.warning("Background distillation failed for %s: %s", session_id[:12], exc)

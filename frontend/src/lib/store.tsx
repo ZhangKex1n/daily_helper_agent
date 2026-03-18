@@ -219,14 +219,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
 
             if (event === "tool_end") {
-              patchAssistant((message) => ({
-                ...message,
-                toolCalls: message.toolCalls.map((toolCall, index, list) =>
+              patchAssistant((message) => {
+                const updatedToolCalls = message.toolCalls.map((toolCall, index, list) =>
                   index === list.length - 1
                     ? { ...toolCall, output: String(data.output ?? "") }
                     : toolCall
-                )
-              }));
+                );
+                
+                // 去除可能从内容里混进来的工具输出文本（这里是个简单的清空/重置策略，按需可根据特殊标记清洗）
+                // 如果需要确保 content 彻底为空，可以视业务修改
+                return {
+                  ...message,
+                  toolCalls: updatedToolCalls
+                };
+              });
               return;
             }
 
