@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from graph.context import build_request_context
 from graph.agent import agent_manager
+from graph.checkpointer import reconnect_checkpointer_async
 from memory_module_v2.service.config import get_memory_backend
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,15 @@ def _new_segment() -> dict[str, Any]:
     return {"content": "", "tool_calls": []}
 
 
+def _is_recoverable_checkpointer_error(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return (
+        exc.__class__.__name__ == "OperationalError"
+        or "could not receive data from server" in text
+        or "software caused connection abort" in text
+    )
+
+
 @router.post("/chat")
 async def chat(payload: ChatRequest):
     session_manager = agent_manager.session_manager
@@ -49,67 +59,84 @@ async def chat(payload: ChatRequest):
     history_for_agent: list[dict[str, Any]] = []
 
     async def event_generator():
-        segments: list[dict[str, Any]] = []
-        current_segment = _new_segment()
+        retried = False
+        while True:
+            segments: list[dict[str, Any]] = []
+            current_segment = _new_segment()
+            emitted_any_event = False
+            try:
+                async for event in agent_manager.astream(
+                    payload.message, history_for_agent, context=request_context
+                ):
+                    emitted_any_event = True
+                    event_type = event["type"]
 
-        try:
-            async for event in agent_manager.astream(
-                payload.message, history_for_agent, context=request_context
-            ):
-                event_type = event["type"]
+                    if event_type == "token":
+                        current_segment["content"] += event.get("content", "")
+                    elif event_type == "tool_start":
+                        current_segment["tool_calls"].append(
+                            {
+                                "tool": event.get("tool", "tool"),
+                                "input": event.get("input", ""),
+                                "output": "",
+                            }
+                        )
+                    elif event_type == "tool_end":
+                        if current_segment["tool_calls"]:
+                            current_segment["tool_calls"][-1]["output"] = event.get("output", "")
+                    elif event_type == "new_response":
+                        if current_segment["content"].strip() or current_segment["tool_calls"]:
+                            segments.append(current_segment)
+                        current_segment = _new_segment()
+                    elif event_type == "done":
+                        if not current_segment["content"].strip() and event.get("content"):
+                            current_segment["content"] = event["content"]
+                        if current_segment["content"].strip() or current_segment["tool_calls"]:
+                            segments.append(current_segment)
 
-                if event_type == "token":
-                    current_segment["content"] += event.get("content", "")
-                elif event_type == "tool_start":
-                    current_segment["tool_calls"].append(
-                        {
-                            "tool": event.get("tool", "tool"),
-                            "input": event.get("input", ""),
-                            "output": "",
-                        }
+                        session_manager.save_message(payload.session_id, "user", payload.message)
+                        for segment in segments:
+                            session_manager.save_message(
+                                payload.session_id,
+                                "assistant",
+                                segment["content"],
+                                tool_calls=segment["tool_calls"] or None,
+                            )
+
+                    data = {key: value for key, value in event.items() if key != "type"}
+                    yield _sse(event_type, data)
+
+                    if event_type == "done":
+                        if is_first_user_message:
+                            title = await agent_manager.generate_title(payload.message)
+                            session_manager.set_title(payload.session_id, title)
+                            yield _sse(
+                                "title",
+                                {"session_id": payload.session_id, "title": title},
+                            )
+
+                        if get_memory_backend() == "v2":
+                            asyncio.create_task(
+                                _distill_session_background(payload.session_id)
+                            )
+                return
+            except Exception as exc:
+                if (
+                    not retried
+                    and not emitted_any_event
+                    and _is_recoverable_checkpointer_error(exc)
+                ):
+                    retried = True
+                    logger.warning(
+                        "checkpointer connection dropped, reconnect and retry once: %s", exc
                     )
-                elif event_type == "tool_end":
-                    if current_segment["tool_calls"]:
-                        current_segment["tool_calls"][-1]["output"] = event.get("output", "")
-                elif event_type == "new_response":
-                    if current_segment["content"].strip() or current_segment["tool_calls"]:
-                        segments.append(current_segment)
-                    current_segment = _new_segment()
-                elif event_type == "done":
-                    if not current_segment["content"].strip() and event.get("content"):
-                        current_segment["content"] = event["content"]
-                    if current_segment["content"].strip() or current_segment["tool_calls"]:
-                        segments.append(current_segment)
+                    await reconnect_checkpointer_async()
+                    continue
 
-                    session_manager.save_message(payload.session_id, "user", payload.message)
-                    for segment in segments:
-                        session_manager.save_message(
-                            payload.session_id,
-                            "assistant",
-                            segment["content"],
-                            tool_calls=segment["tool_calls"] or None,
-                        )
-
-                data = {key: value for key, value in event.items() if key != "type"}
-                yield _sse(event_type, data)
-
-                if event_type == "done":
-                    if is_first_user_message:
-                        title = await agent_manager.generate_title(payload.message)
-                        session_manager.set_title(payload.session_id, title)
-                        yield _sse(
-                            "title",
-                            {"session_id": payload.session_id, "title": title},
-                        )
-
-                    if get_memory_backend() == "v2":
-                        asyncio.create_task(
-                            _distill_session_background(payload.session_id)
-                        )
-        except Exception as exc:
-            print("[chat] error in event_generator", repr(exc))
-            traceback.print_exc()
-            yield _sse("error", {"error": str(exc)})
+                print("[chat] error in event_generator", repr(exc))
+                traceback.print_exc()
+                yield _sse("error", {"error": str(exc)})
+                return
 
     if payload.stream:
         return StreamingResponse(event_generator(), media_type="text/event-stream")

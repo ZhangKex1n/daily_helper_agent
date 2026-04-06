@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 from typing import Any
 
@@ -14,6 +15,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 # 默认使用内存存储；CHECKPOINTER=postgres 时使用 AsyncPostgresSaver
 _default_saver: Any = None
 _postgres_cm: Any = None  # 保持 AsyncPostgresSaver 的 context manager 引用，避免连接被关
+_init_lock = asyncio.Lock()
 
 
 def _use_postgres() -> bool:
@@ -49,6 +51,12 @@ def get_checkpointer() -> Any:
 async def init_checkpointer_async() -> None:
     """使用 Postgres 时在应用启动时调用一次：建表并建立连接。非 Postgres 时初始化 InMemorySaver。"""
     global _default_saver, _postgres_cm
+    async with _init_lock:
+        await _init_checkpointer_nolock()
+
+
+async def _init_checkpointer_nolock() -> None:
+    global _default_saver, _postgres_cm
     if _default_saver is not None:
         return
     if _use_postgres():
@@ -65,3 +73,19 @@ async def init_checkpointer_async() -> None:
             ) from e
     else:
         _default_saver = InMemorySaver()
+
+
+async def reconnect_checkpointer_async() -> None:
+    """重建 checkpointer 连接（用于数据库重启后连接失效场景）。"""
+    global _default_saver, _postgres_cm
+    async with _init_lock:
+        old_cm = _postgres_cm
+        _default_saver = None
+        _postgres_cm = None
+        if old_cm is not None:
+            try:
+                await old_cm.__aexit__(None, None, None)
+            except Exception:
+                # 旧连接可能已损坏，忽略关闭异常并继续重建
+                pass
+        await _init_checkpointer_nolock()

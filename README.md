@@ -1,27 +1,36 @@
 # Mini-OpenClaw
 
 **本地运行、文件优先、可审计** 的 AI Agent 工作台，一定程度上解决Openclaw的长期记忆及安全问题：
-对话与证据落盘为本地 JSON；
-长期记忆由 `memory_module_v2` 做结构化蒸馏与混合检索实现11倍tokens压缩；
-接入自己微调的Qwen3.5 4b模型配合Langchain的before_agent middleware用于合规内容检测；
-基于 SKILL构建能力编排层，按需调度多个Tools；
-接入Langfuse，Prompt、工具轨迹、记忆检索与注入过程都排查；
+1. 对话与证据落盘为本地 JSON；
+2. 长期记忆由 `memory_module_v2` 做结构化蒸馏与混合检索实现11倍tokens压缩；
+3. 接入自己微调的Qwen3.5 4b模型配合Langchain的before_agent middleware用于合规内容检测；
+4. 基于 SKILL构建能力编排层，按需调度多个Tools；
+5. System Prompt自动拼接
+6. 接入Langfuse，Prompt、工具轨迹、记忆检索与注入过程都排查；
 
 
 ## 效果展示
 
-页面：
-
+### 页面：
 ![](./page_show1.png)
 ![](./Snipaste_2026-03-18_21-42-43.png)
+### Prompt攻击防御：
+![](./guardain_test.png)
+![](./guardain_test_langfuse.png)
 
-蒸馏后的部分记忆片段：
+### 蒸馏后的部分记忆片段：
 
 ![](./database_schema.png)
 
+## 适合谁
+拿来学习和扩展Agent功能的你
+## TODO LIST
+- 学习Claude Code，尝试融合会话压缩、subagent分配、System Prompt优化等机制
+- 加入定时任务、心跳检测等功能
+
 ## 为什么是它
 
-- **可审计**：会话在 `sessions/*.json`，记忆对象与证据可追溯到具体轮次；索引（向量 / BM25）可丢弃重建。
+- **可审计**：会话在 `sessions/*.json`，记忆对象与证据可追溯到具体轮次；索引（向量 / BM25）可丢弃重建；搭配Langfuse实现Query全链路追踪
 - **分层记忆**：v2 将「结构化检索对象」与「原始 verbatim 证据」分开，命中后可回跳，而不是只剩一段模型摘要。
 - **工程化 Agent 栈**：基于 **LangChain 1.x `create_agent`**，可选 **Guardian 前置审查**、**对话摘要中间件**、**Postgres Checkpointer**；与 **Langfuse** 等追踪可选对接。
 - **技能即文档**：技能目录 + `SKILL.md`，配合快照按需加载，扩展和 Code Review 都轻量。
@@ -31,7 +40,6 @@
 - **流式对话**：FastAPI + SSE，推送 token、工具调用与分段回复。
 - **会话持久化**：每轮写入 `backend/sessions/*.json`。
 - **长期记忆**：`backend/memory_module_v2/` — 结构化蒸馏、证据回跳、`dense + BM25 + RRF` 混合检索；可选 **独立蒸馏模型**（`DISTILL_*`）以节省主模型 token。
-- **本地知识库**：`backend/knowledge/` + LlamaIndex。
 - **技能系统**：先读技能快照，再按需拉取 `SKILL.md`。
 - **三栏工作台**：会话列表、聊天区、右侧文件检查器；可在线编辑 Memory / Skills / Workspace。
 - **记忆注入策略**：`tool`（Agent 自主 `search_memory`）/ `always` / `off`（见下文环境变量）。
@@ -49,6 +57,7 @@
 - FastAPI
 - LangChain 1.x（`create_agent` + 可选中间件）
 - OpenAI 兼容的多厂商 Chat / Embedding API
+- Langfuse
 
 ### 前端
 
