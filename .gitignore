@@ -18,6 +18,7 @@ backend/memory_module_v1/sessions/archive/*.json
 backend/memory_module_v2/eval/*.jsonl
 backend/memory_module_v2/eval/*.json
 backend/storage/memory_index/*
+backend/storage/*
 !backend/storage/memory_index/.gitkeep
 backend/storage/knowledge/*
 !backend/storage/knowledge/.gitkeep

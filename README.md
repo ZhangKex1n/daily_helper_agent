@@ -231,5 +231,5 @@ langchain-miniopenclaw-main/
 修改这些文件后，**下一轮请求即可生效**（无需改 Python 业务代码）。
 
 ## 致谢
-memory_module_v2的思路论文来源（https://arxiv.org/html/2603.13017v1）
-初版项目思路参考 [lyxhnu/langchain-miniopenclaw](https://github.com/lyxhnu/langchain-miniopenclaw)。
+- memory_module_v2的思路论文来源（https://arxiv.org/abs/2603.13017）
+- 初版项目思路参考 [lyxhnu/langchain-miniopenclaw](https://github.com/lyxhnu/langchain-miniopenclaw)。
