@@ -1,0 +1,32 @@
+{
+    "plugins": {
+        "Godcmd": {
+            "enabled": true,
+            "priority": 999
+        },
+        "Keyword": {
+            "enabled": true,
+            "priority": 900
+        },
+        "Banwords": {
+            "enabled": false,
+            "priority": 100
+        },
+        "Role": {
+            "enabled": false,
+            "priority": 0
+        },
+        "Dungeon": {
+            "enabled": false,
+            "priority": 0
+        },
+        "Hello": {
+            "enabled": true,
+            "priority": -1
+        },
+        "Finish": {
+            "enabled": true,
+            "priority": -999
+        }
+    }
+}

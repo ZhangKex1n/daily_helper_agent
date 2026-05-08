@@ -23,7 +23,7 @@
 
 ### 方案 1: Guardian Middleware 前置拦截 (推荐)
 
-在 `backend/graph/agent_factory.py` 的 middleware 链最前挂载 Guardian。危险请求直接中断，不进入主 Agent 推理。
+在 `api_server/graph/agent_factory.py` 的 middleware 链最前挂载 Guardian。危险请求直接中断，不进入主 Agent 推理。
 
 优点:
 - 与现有架构一致(当前已使用 `SummarizationMiddleware`)
@@ -35,7 +35,7 @@
 
 ### 方案 2: API 层前置拦截
 
-在 `backend/api/chat.py` 调用 `agent_manager.astream(...)` 之前先判定。
+在 `api_server/api/chat.py` 调用 `agent_manager.astream(...)` 之前先判定。
 
 优点: 实现直观、调试简单。  
 缺点: 容易遗漏其他调用入口，防护边界分散。
@@ -53,23 +53,23 @@
 
 新增模块:
 
-- `backend/graph/guardian.py` (建议)
+- `api_server/graph/guardian.py` (建议)
   - `GuardianVerdict`: `安全|危险` + `reason_code` + `latency_ms`
   - `GuardianClient`: 调用小模型并解析强约束输出
   - `GuardianMiddleware`: 在主 Agent 前置执行，危险即短路
 
 接入点:
 
-- `backend/graph/agent_factory.py`
+- `api_server/graph/agent_factory.py`
   - 在 middleware 列表中将 Guardian 放在最前
-- `backend/graph/agent.py`
+- `api_server/graph/agent.py`
   - 保持现有 `astream` 事件契约，支持 Guardian 短路返回
-- `backend/api/chat.py`
+- `api_server/api/chat.py`
   - 无需改入口协议；消费既有 `done/error` 事件即可
 
 ## 5. 配置设计
 
-在 `backend/config/config.py` 与 `backend/config/.env.example` 增加:
+在 `api_server/config/config.py` 与 `api_server/config/.env.example` 增加:
 
 - `GUARDIAN_ENABLED=true`
 - `GUARDIAN_PROVIDER=openai`

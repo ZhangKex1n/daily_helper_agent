@@ -5,6 +5,8 @@ import { Save, X } from "lucide-react";
 
 import { useAppStore } from "@/lib/store";
 
+const LLM_CONTEXT_SENTINEL = "workspace/LLM_CONTEXT.md";
+
 export function InspectorPanel({ onClose }: { onClose?: () => void }) {
   const {
     editableFiles,
@@ -16,6 +18,8 @@ export function InspectorPanel({ onClose }: { onClose?: () => void }) {
     saveInspector
   } = useAppStore();
 
+  const isLlmContext = inspectorPath === LLM_CONTEXT_SENTINEL;
+
   return (
     <aside className="panel flex h-full flex-col rounded-[30px] p-4">
       <div className="mb-4 flex items-center justify-between">
@@ -26,14 +30,20 @@ export function InspectorPanel({ onClose }: { onClose?: () => void }) {
           <h2 className="text-lg font-semibold tracking-[-0.04em]">Memory / Skills / Prompt</h2>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            className="flex items-center gap-2 rounded-full bg-[rgba(15,139,141,0.12)] px-4 py-2 text-sm text-ocean"
-            onClick={() => void saveInspector()}
-            type="button"
-          >
-            <Save size={16} />
-            {inspectorDirty ? "保存修改" : "已同步"}
-          </button>
+          {isLlmContext ? (
+            <span className="rounded-full bg-[rgba(0,0,0,0.06)] px-4 py-2 text-sm text-[var(--color-ink-soft)]">
+              只读 · 系统生成
+            </span>
+          ) : (
+            <button
+              className="flex items-center gap-2 rounded-full bg-[rgba(15,139,141,0.12)] px-4 py-2 text-sm text-ocean"
+              onClick={() => void saveInspector()}
+              type="button"
+            >
+              <Save size={16} />
+              {inspectorDirty ? "保存修改" : "已同步"}
+            </button>
+          )}
           {onClose && (
             <button
               className="flex h-9 w-9 items-center justify-center rounded-full bg-white/60 text-[var(--color-ink-soft)] hover:bg-white/80"
@@ -67,11 +77,12 @@ export function InspectorPanel({ onClose }: { onClose?: () => void }) {
         <Editor
           defaultLanguage="markdown"
           height="100%"
-          onChange={(value) => updateInspectorContent(value ?? "")}
+          onChange={(value) => !isLlmContext && updateInspectorContent(value ?? "")}
           options={{
             fontFamily: "var(--font-mono)",
             fontSize: 13,
             minimap: { enabled: false },
+            readOnly: isLlmContext,
             scrollBeyondLastLine: false,
             wordWrap: "on"
           }}

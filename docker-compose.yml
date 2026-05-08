@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  db:
+    image: ankane/pgvector:latest  # 这个镜像自带了 vector 插件
+    container_name: agent_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: agent_memory #自己定义的名字
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data # 数据持久化，防止重启丢失

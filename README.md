@@ -38,8 +38,8 @@
 ## 它现在能做什么
 
 - **流式对话**：FastAPI + SSE，推送 token、工具调用与分段回复。
-- **会话持久化**：每轮写入 `backend/sessions/*.json`。
-- **长期记忆**：`backend/memory_module_v2/` — 结构化蒸馏、证据回跳、`dense + BM25 + RRF` 混合检索；可选 **独立蒸馏模型**（`DISTILL_*`）以节省主模型 token。
+- **会话持久化**：每轮写入 `api_server/sessions/*.json`。
+- **长期记忆**：`api_server/memory_module_v2/` — 结构化蒸馏、证据回跳、`dense + BM25 + RRF` 混合检索；可选 **独立蒸馏模型**（`DISTILL_*`）以节省主模型 token。
 - **技能系统**：先读技能快照，再按需拉取 `SKILL.md`。
 - **三栏工作台**：会话列表、聊天区、右侧文件检查器；可在线编辑 Memory / Skills / Workspace。
 - **记忆注入策略**：`tool`（Agent 自主 `search_memory`）/ `always` / `off`（见下文环境变量）。
@@ -66,7 +66,7 @@
 - React 18、TypeScript
 - Tailwind CSS、Monaco Editor
 
-### 默认模型配置（可在 `backend/config/.env` 覆盖）
+### 默认模型配置（可在 `api_server/config/.env` 覆盖）
 
 - LLM：`zhipu` / `glm-5`
 - Embedding：`bailian` / `text-embedding-v4`
@@ -90,7 +90,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-配置环境变量：**复制 `backend/config/.env.example` 为 `backend/config/.env`**，按文件内注释补齐密钥与模型；详见下文「记忆开关」与 Guardian 相关变量。
+配置环境变量：**复制 `api_server/config/.env.example` 为 `api_server/config/.env`**，按文件内注释补齐密钥与模型；详见下文「记忆开关」与 Guardian 相关变量。
 
 启动 API（在 `backend` 目录下，与 `app.py` 同级）：
 
@@ -114,7 +114,7 @@ npm run dev
 2. 打开右侧 Inspector，查看会话与关联文件。
 3. 新建或编辑一个 skill，观察下一轮是否按 `SKILL.md` 行为变化。
 4. 设置 `MEMORY_BACKEND=v2`，再问依赖历史语境的问题；可选切换 `MEMORY_V2_INJECT` 感受工具注入与强注入差异。
-5. 在 `backend/sessions/*.json` 与 `memory_module_v2` 相关存储中对照蒸馏结果与检索命中，确认数据真实落盘、可追溯。
+5. 在 `api_server/sessions/*.json` 与 `memory_module_v2` 相关存储中对照蒸馏结果与检索命中，确认数据真实落盘、可追溯。
 
 ## memory_module_v2 是什么
 
@@ -168,7 +168,7 @@ MEMORY_V2_INJECT_TOP_K=3
 
 我是用的自己微调的Qwen3.5 4b，建议大家去尝试自己微调一个，或者设置GUARDIAN_ENABLED=false暂时跳过此功能
 
-在 `backend/config/.env` 中常用项：
+在 `api_server/config/.env` 中常用项：
 
 ```env
 GUARDIAN_ENABLED=true
@@ -183,13 +183,13 @@ GUARDIAN_FAIL_MODE=closed
 
 ### 可选：对话摘要与 Checkpointer
 
-见 `backend/config/.env.example` 中 `SUMMARIZATION_ENABLED`、`SUMMARIZATION_TRIGGER_MESSAGES`、`SUMMARIZATION_KEEP_MESSAGES` 以及 `CHECKPOINTER` / `POSTGRES_DSN`（或分字段）说明。
+见 `api_server/config/.env.example` 中 `SUMMARIZATION_ENABLED`、`SUMMARIZATION_TRIGGER_MESSAGES`、`SUMMARIZATION_KEEP_MESSAGES` 以及 `CHECKPOINTER` / `POSTGRES_DSN`（或分字段）说明。
 
 ## 项目结构
 
 ```text
 langchain-miniopenclaw-main/
-├── backend/
+├── api_server/
 │   ├── api/                  # 聊天、会话、文件、压缩、配置、token 等
 │   ├── config/               # 配置加载、运行时 config.json、.env
 │   ├── graph/                # Agent 工厂、LLM、Guardian、Checkpointer
@@ -218,7 +218,7 @@ langchain-miniopenclaw-main/
 
 ### 2. 技能即插件
 
-技能是目录中的 `SKILL.md`（例如 `backend/skills/get_weather/SKILL.md`）。Agent 先读 `SKILLS_SNAPSHOT.md` 再按需深入具体技能文件，便于审查与迭代。
+技能是目录中的 `SKILL.md`（例如 `api_server/skills/get_weather/SKILL.md`）。Agent 先读 `SKILLS_SNAPSHOT.md` 再按需深入具体技能文件，便于审查与迭代。
 
 ### 3. Prompt 可解释
 

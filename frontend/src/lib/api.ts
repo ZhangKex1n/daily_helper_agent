@@ -84,6 +84,10 @@ export async function deleteSession(sessionId: string) {
   });
 }
 
+export async function getLlmContext(sessionId: string) {
+  return request<{ session_id: string; content: string }>(`/sessions/${sessionId}/llm-context`);
+}
+
 export async function getSessionHistory(sessionId: string) {
   return request<SessionHistory>(`/sessions/${sessionId}/history`);
 }

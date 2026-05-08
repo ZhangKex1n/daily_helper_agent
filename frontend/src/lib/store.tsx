@@ -6,6 +6,7 @@ import {
   compressSession,
   createSession,
   deleteSession,
+  getLlmContext,
   getRagMode,
   getSessionHistory,
   getSessionTokens,
@@ -68,9 +69,14 @@ const FIXED_FILES = [
   "workspace/IDENTITY.md",
   "workspace/USER.md",
   "workspace/AGENTS.md",
+  "workspace/LLM_CONTEXT.md",
   "memory_module_v1/long_term_memory/MEMORY.md",
   "SKILLS_SNAPSHOT.md"
 ];
+
+/** 哨兵路径：点击 LLM_CONTEXT.md 标签时 inspectorPath 的值。
+ *  实际内容从 /api/sessions/{id}/llm-context 读取，不走文件接口。 */
+const LLM_CONTEXT_SENTINEL = "workspace/LLM_CONTEXT.md";
 
 const StoreContext = createContext<AppStore | null>(null);
 
@@ -137,6 +143,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   async function selectSession(sessionId: string) {
     setCurrentSessionId(sessionId);
     await refreshSessionDetails(sessionId);
+    // 如果 Inspector 正在显示 LLM_CONTEXT，切换 session 时自动刷新到新 session 的内容
+    if (inspectorPath === LLM_CONTEXT_SENTINEL) {
+      const ctx = await getLlmContext(sessionId);
+      setInspectorContent(ctx.content);
+      setInspectorDirty(false);
+    }
   }
 
   async function ensureSession() {
@@ -322,9 +334,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   async function loadInspectorFile(path: string) {
     setInspectorPath(path);
-    const file = await loadFile(path);
-    setInspectorContent(file.content);
     setInspectorDirty(false);
+    if (path === LLM_CONTEXT_SENTINEL) {
+      // LLM_CONTEXT 从 session 专属接口读取，不走文件接口
+      const sessionId = currentSessionId;
+      if (!sessionId) {
+        setInspectorContent("");
+        return;
+      }
+      const ctx = await getLlmContext(sessionId);
+      setInspectorContent(ctx.content);
+    } else {
+      const file = await loadFile(path);
+      setInspectorContent(file.content);
+    }
   }
 
   function updateInspectorContent(value: string) {
@@ -333,6 +356,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   async function saveInspector() {
+    // LLM_CONTEXT 是系统自动生成的只读文件，不允许用户保存
+    if (inspectorPath === LLM_CONTEXT_SENTINEL) {
+      return;
+    }
     await saveFile(inspectorPath, inspectorContent);
     setInspectorDirty(false);
     await refreshSkills();
@@ -372,6 +399,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setInspectorPath(file.path);
       setInspectorContent(file.content);
     })();
+
+    // 每 15 秒轮询一次会话列表，使微信/飞书新建的会话能自动出现在侧边栏
+    const poll = setInterval(() => {
+      void refreshSessions();
+    }, 15_000);
+    return () => clearInterval(poll);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const value: AppStore = {
