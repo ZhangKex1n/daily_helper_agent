@@ -12,10 +12,10 @@ from langchain.agents.middleware import SummarizationMiddleware
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.tools import BaseTool
 
-from graph.guardian import build_guardian_middleware
-from graph.checkpointer import get_checkpointer
-from service.prompt_builder import build_system_prompt
-from graph.llm import build_llm_config_from_settings, get_llm
+from api_server.graph.guardian import build_guardian_middleware
+from api_server.graph.checkpointer import get_checkpointer
+from api_server.service.prompt_builder import build_system_prompt
+from api_server.graph.llm import build_llm_config_from_settings, get_llm
 
 # 兼容 LangGraph 的 CompiledStateGraph 类型
 AgentGraph = Any

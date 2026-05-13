@@ -16,7 +16,7 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 
 from config import get_settings
-from graph.llm import build_embedding_config_from_settings, get_embedding_model
+from api_server.graph.llm import build_embedding_config_from_settings, get_embedding_model
 
 # Chroma 持久化目录；与 knowledge 分离，仅用于长期记忆
 CHROMA_MEMORY_COLLECTION = "memory"

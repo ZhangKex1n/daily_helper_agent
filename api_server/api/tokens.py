@@ -6,8 +6,8 @@ import tiktoken
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from graph.agent import agent_manager
-from service.prompt_builder import build_system_prompt
+from api_server.graph.agent import agent_manager
+from api_server.service.prompt_builder import build_system_prompt
 
 router = APIRouter()
 

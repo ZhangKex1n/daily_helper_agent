@@ -13,6 +13,10 @@ langchain-community>=0.3.0,<1.0.0
 langfuse>=2.0.0
 psycopg[binary]>=3.2.0,<4.0.0
 
+# MCP client (optional)：api_server 作为 MCP client 调用外部 MCP server
+# 配置文件：mcp_servers/mcp_servers.json
+mcp>=1.2.0,<3
+
 # memory_module_v2: BM25 keyword retrieval + Chinese tokenizer
 rank-bm25>=0.2.2
 jieba>=0.42.1

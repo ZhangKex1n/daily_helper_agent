@@ -1,0 +1,25 @@
+{
+  "id": "debug",
+  "title": "网络连通性测试",
+  "created_at": 1777542859.7646458,
+  "updated_at": 1777885345.0730333,
+  "compressed_context": "",
+  "messages": [
+    {
+      "role": "user",
+      "content": "ping"
+    },
+    {
+      "role": "assistant",
+      "content": "pong\n\n我在线，随时准备协助你处理事务。需要我做什么？"
+    },
+    {
+      "role": "user",
+      "content": "ping"
+    },
+    {
+      "role": "assistant",
+      "content": "pong\n\n我在线，随时可以处理任务。需要我做什么？"
+    }
+  ]
+}

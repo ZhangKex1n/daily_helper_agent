@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from graph.agent import agent_manager
+from api_server.graph.agent import agent_manager
 
 router = APIRouter()
 

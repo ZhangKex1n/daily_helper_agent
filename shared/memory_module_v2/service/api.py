@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from config import get_settings
-from graph.llm import build_embedding_config_from_settings, get_embedding_model
+from api_server.graph.llm import build_embedding_config_from_settings, get_embedding_model
 
 from ..domain.enums import SearchMode
 from ..domain.models import (

@@ -83,19 +83,19 @@
 
 ### 启动后端
 
-```bash
-cd backend
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
+```
+cd miniOpenClaw
+export PYTHONUTF8=1
+export PYTHONIOENCODING=utf-8
+conda activate agent
 ```
 
 配置环境变量：**复制 `api_server/config/.env.example` 为 `api_server/config/.env`**，按文件内注释补齐密钥与模型；详见下文「记忆开关」与 Guardian 相关变量。
 
-启动 API（在 `backend` 目录下，与 `app.py` 同级）：
+根目录下启动 API：
 
 ```bash
-uvicorn app:app --host 0.0.0.0 --port 8002 --reload
+uvicorn api_server.app:app --host 0.0.0.0 --port 8002 --reload
 ```
 
 ### 启动前端
@@ -107,6 +107,9 @@ npm run dev
 ```
 
 浏览器打开 [http://localhost:3000](http://localhost:3000)。
+
+微信：
+python channel_server/channel_runner.py
 
 ## 5 分钟体验路线
 

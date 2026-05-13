@@ -55,14 +55,16 @@ class OpenAICompatibleBot:
         This method handles:
         1. Format conversion (Claude format → OpenAI format)
         2. System prompt injection
-        3. API calling with proper configuration
-        4. Error handling
+        3. MCP tools injection from shared.mcp.openai_adapter (auto-merged)
+        4. API calling with proper configuration
+        5. Error handling
         
         Args:
             messages: List of messages (may be in Claude format from agent)
             tools: List of tool definitions (may be in Claude format from agent)
             stream: Whether to use streaming
             **kwargs: Additional parameters (max_tokens, temperature, system, etc.)
+                      Pass include_mcp_tools=False to skip MCP tool injection.
             
         Returns:
             Formatted response in OpenAI format or generator for streaming
@@ -77,6 +79,23 @@ class OpenAICompatibleBot:
             # Convert tools from Claude format to OpenAI format
             if tools:
                 tools = self._convert_tools_to_openai_format(tools)
+            
+            # ── 注入 MCP tools ─────────────────────────────────────────────
+            # 从 shared/mcp/openai_adapter.py 读取 MCP server 配置，把所有
+            # enabled tool 以 OpenAI function schema 格式追加到 tools 列表。
+            # 传入 include_mcp_tools=False 可跳过此步骤。
+            if kwargs.get("include_mcp_tools", True):
+                try:
+                    from shared.mcp.openai_adapter import get_openai_mcp_tools
+                    mcp_tools = get_openai_mcp_tools()
+                    if mcp_tools:
+                        tools = list(tools or []) + mcp_tools
+                        logger.debug(
+                            "[OpenAICompatible] 注入 %d 个 MCP tools", len(mcp_tools)
+                        )
+                except Exception as _mcp_err:
+                    logger.debug("[OpenAICompatible] MCP tools 注入跳过: %s", _mcp_err)
+            # ──────────────────────────────────────────────────────────────
             
             # Handle system prompt (OpenAI uses system message, Claude uses separate parameter)
             system_prompt = kwargs.get('system')

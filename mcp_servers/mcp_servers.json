@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "mx_zixuan": {
+      "command": "D:\\anaconda\\envs\\agent\\python.exe",
+      "args": [
+        "D:\\miniOpenClaw\\mcp_servers\\mx_zixuan_mcp\\server.py"
+      ],
+      "env": {
+        "MX_APIKEY": ""
+      },
+      "enabled": true
+    }
+  }
+}

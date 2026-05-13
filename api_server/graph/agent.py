@@ -8,12 +8,12 @@ from typing import Any
 import logging
 
 from config import get_settings, runtime_config
-from graph.context import RequestContext
-from graph.agent_factory import build_agent_config, create_agent_from_config
-from service.memory_indexer import memory_indexer
-from service.session_manager import SessionManager
-from graph.llm import build_llm_config_from_settings, get_llm
-from tools import get_all_tools
+from api_server.graph.context import RequestContext
+from api_server.graph.agent_factory import build_agent_config, create_agent_from_config
+from api_server.service.memory_indexer import memory_indexer
+from api_server.service.session_manager import SessionManager
+from api_server.graph.llm import build_llm_config_from_settings, get_llm
+from api_server.tools import get_all_tools
 from shared.memory_module_v2.service.config import get_memory_backend, get_memory_v2_inject_mode
 from shared.memory_module_v2.integrations.middleware import build_memory_context
 
@@ -281,30 +281,7 @@ class AgentManager:
                         yield {"type": "new_response"}
 
         final_content = "".join(final_content_parts).strip() or last_ai_message.strip()
-        # 若 LLM 返回了 usage，且本次调用启用了 Langfuse，则在结束时补充 usage 信息，方便在 Langfuse 中显示 tokens
-        if last_usage and context and context.callbacks:
-            try:
-                from langfuse import get_client
-                from langfuse.langchain import CallbackHandler as LangfuseCallbackHandler
-
-                langfuse_handler: Any | None = None
-                for cb in context.callbacks:
-                    if isinstance(cb, LangfuseCallbackHandler):
-                        langfuse_handler = cb
-                        break
-                trace_id = getattr(langfuse_handler, "last_trace_id", None) if langfuse_handler else None
-                if trace_id:
-                    client = get_client()
-                    client.trace.update(
-                        id=trace_id,
-                        usage={
-                            "input": last_usage.get("prompt_tokens", 0),
-                            "output": last_usage.get("completion_tokens", 0),
-                            "total": last_usage.get("total_tokens", 0),
-                        },
-                    )
-            except Exception as exc:
-                print("[langfuse] 更新 usage 失败：", repr(exc))
+        # Langfuse v4 (OTel-based) 通过 LangchainCallbackHandler 自动上报 usage，无需手动调用 trace.update
         yield {"type": "done", "content": final_content}
 
     async def generate_title(self, first_user_message: str) -> str:

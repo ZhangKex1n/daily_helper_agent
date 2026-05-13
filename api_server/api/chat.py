@@ -10,9 +10,9 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
-from graph.context import build_request_context
-from graph.agent import agent_manager
-from graph.checkpointer import reconnect_checkpointer_async
+from api_server.graph.context import build_request_context
+from api_server.graph.agent import agent_manager
+from api_server.graph.checkpointer import reconnect_checkpointer_async
 from shared.memory_module_v2.service.config import get_memory_backend
 
 logger = logging.getLogger(__name__)
@@ -46,6 +46,7 @@ def _is_recoverable_checkpointer_error(exc: Exception) -> bool:
 
 @router.post("/chat")
 async def chat(payload: ChatRequest):
+    #session_manager是session管理器，用于管理会话的创建、加载、保存和删除
     session_manager = agent_manager.session_manager
     if session_manager is None:
         raise HTTPException(status_code=503, detail="Agent manager is not initialized")

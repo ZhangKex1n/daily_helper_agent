@@ -6,9 +6,9 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from graph.agent import agent_manager
-from service.memory_indexer import memory_indexer
-from tools.skills_scanner import refresh_snapshot, scan_skills
+from api_server.graph.agent import agent_manager
+from api_server.service.memory_indexer import memory_indexer
+from api_server.tools.skills_scanner import refresh_snapshot, scan_skills
 
 router = APIRouter()
 

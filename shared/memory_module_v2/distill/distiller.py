@@ -16,7 +16,7 @@ from json import JSONDecodeError
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from config import get_settings, LLM_PROVIDER_DEFAULTS, PROVIDER_ALIASES
-from graph.llm import ResolvedLLMConfig, get_llm, build_llm_config_from_settings
+from api_server.graph.llm import ResolvedLLMConfig, get_llm, build_llm_config_from_settings
 
 from ..domain.enums import RoomType
 from ..domain.models import DistilledObject, Exchange, RoomAssignment

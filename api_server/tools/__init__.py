@@ -4,10 +4,17 @@ from pathlib import Path
 
 from langchain_core.tools import BaseTool
 
+<<<<<<< HEAD
 from tools.fetch_url_tool import FetchURLTool
 from tools.python_repl_tool import PythonReplTool
 from tools.read_file_tool import ReadFileTool
 from tools.terminal_tool import TerminalTool
+=======
+from api_server.tools.fetch_url_tool import FetchURLTool
+from api_server.tools.python_repl_tool import PythonReplTool
+from api_server.tools.read_file_tool import ReadFileTool
+from api_server.tools.terminal_tool import TerminalTool
+>>>>>>> mcp-and-local
 
 
 def get_all_tools(base_dir: Path) -> list[BaseTool]:
@@ -18,6 +25,19 @@ def get_all_tools(base_dir: Path) -> list[BaseTool]:
         ReadFileTool(root_dir=base_dir),
     ]
 
+<<<<<<< HEAD
+=======
+    # ── MCP tools ─────────────────────────────────────────────────────────────
+    # 读 mcp_servers/mcp_servers.json，自动把每个 server 的 tools 注册进来。
+    # 配置文件不存在或 mcp / shared 未安装时静默跳过，不影响启动。
+    try:
+        from shared.mcp.langchain_adapter import get_mcp_tools
+        tools.extend(get_mcp_tools())
+    except Exception:
+        pass
+
+    # ── memory_module_v2 tools ─────────────────────────────────────────────────
+>>>>>>> mcp-and-local
     from shared.memory_module_v2.service.config import get_memory_backend, get_memory_v2_inject_mode
     if get_memory_backend() == "v2" and get_memory_v2_inject_mode() == "tool":
         from shared.memory_module_v2.integrations.tools import get_memory_tools
