@@ -1,12 +1,12 @@
 # memory_module_v2 MRR评估：ground truth自动生成与计算方案（方案A）
 
 ## 目标
-对 `backend/memory_module_v2` 的记忆检索效果做 **MRR（Mean Reciprocal Rank）** 评估，评估对象为：
+对 `api_server/memory_module_v2` 的记忆检索效果做 **MRR（Mean Reciprocal Rank）** 评估，评估对象为：
 - 检索入口：`memory_module_v2.service.api.search_memory()`
 - 候选排序：返回的 `MemorySearchResponse.hits`（按 `MemoryHit.rank` 从 1 开始）
 
 本设计同时覆盖两部分：
-1. 自动生成 ground truth（labels），从 `backend/memory_module_v1/sessions/*.json` 的对话文本推导“正样本 `exchange_id`”
+1. 自动生成 ground truth（labels），从 `api_server/memory_module_v1/sessions/*.json` 的对话文本推导“正样本 `exchange_id`”
 2. 基于 ground truth 计算 MRR@K（可选：分别评估 dense/keyword/hybrid 等检索模式）
 
 ## 范围与不做的事
@@ -47,7 +47,7 @@
 
 ## ground truth 生成：labels 生成器（规则）
 ### 输入
-- session 数据目录：`backend/memory_module_v1/sessions/*.json`
+- session 数据目录：`api_server/memory_module_v1/sessions/*.json`
 
 ### 生成步骤（每个 session）
 1. 读取 session 原始 JSON：`load_session_raw(session_id)`
@@ -68,7 +68,7 @@
 
 ### 输出格式
 建议输出到：
-- `backend/memory_module_v2/eval/ground_truth_v1_sessions.jsonl`
+- `api_server/memory_module_v2/eval/ground_truth_v1_sessions.jsonl`
 
 每行 JSON：
 ```json
@@ -97,7 +97,7 @@
 ### 依赖/前置条件（非常重要）
 要保证检索结果非空，需要满足：
 1. exchanges 已被蒸馏写入 storage（至少需要 `memory_module_v2` 的 objects）
-   - 建议执行：`backend/memory_module_v2/script/distill_all_sessions.py`
+   - 建议执行：`api_server/memory_module_v2/script/distill_all_sessions.py`
 2. BM25 keyword 索引已构建（对 `keyword_verbatim/hybrid_cross`）
    - 依赖你们当前 BM25 的缓存构建与 rebuild 策略
    - 建议在评测前触发一次 health check/增量 rebuild（或直接用你们已有的启动流程）
@@ -114,7 +114,7 @@
 
 ### 输出
 建议输出到：
-- `backend/memory_module_v2/eval/mrr_results.json`
+- `api_server/memory_module_v2/eval/mrr_results.json`
 
 包含字段：
 - mode, K
@@ -131,15 +131,15 @@
 
 ## 建议实现产出（代码文件清单，供实现时对齐）
 建议创建以下脚本（具体命名可在实现时微调）：
-1. `backend/memory_module_v2/eval/generate_ground_truth.py`
+1. `api_server/memory_module_v2/eval/generate_ground_truth.py`
    - 读取 v1 sessions
    - 调用 `segment_exchanges`
    - 生成 ground truth JSONL
-2. `backend/memory_module_v2/eval/evaluate_mrr.py`
+2. `api_server/memory_module_v2/eval/evaluate_mrr.py`
    - 读取 ground truth
    - 调用 `search_memory`
    - 计算 MRR@K并输出结果 JSON
-3. 可选：`backend/memory_module_v2/eval/run_mrr_eval.py`
+3. 可选：`api_server/memory_module_v2/eval/run_mrr_eval.py`
    - 批量跑不同 mode 和不同 K
 
 ## 运行方式（草案）

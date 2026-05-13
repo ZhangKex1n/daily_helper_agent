@@ -15,7 +15,7 @@ const monoFont = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mini-OpenClaw",
+  title: "Crisy's OpenClaw",
   description: "A transparent, file-first local AI agent system."
 };
 

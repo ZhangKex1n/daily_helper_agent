@@ -35,8 +35,8 @@ export function Navbar() {
           <Sparkles size={20} />
         </div>
         <div>
-          <p className="text-xs uppercase tracking-[0.32em] text-[var(--color-ink-soft)]">
-            Mini-OpenClaw
+          <p className="text-xs normal-case tracking-[0.32em] text-[var(--color-ink-soft)]">
+            Crisy's OpenClaw
           </p>
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-semibold tracking-[-0.04em]">{currentTitle}</h1>

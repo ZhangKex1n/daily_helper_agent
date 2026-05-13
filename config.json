@@ -1,0 +1,44 @@
+{
+  "debug": false,
+  "channel_type": [
+    "weixin"
+  ],
+  "web_console": false,
+  "web_port": 9899,
+  "web_password": "",
+  "web_session_expire_days": 30,
+  "plugin_trigger_prefix": "$",
+  "model": "glm-5",
+  "bot_type": "",
+  "temperature": 0.9,
+  "top_p": 1,
+  "frequency_penalty": 0.0,
+  "presence_penalty": 0.0,
+  "request_timeout": 180,
+  "open_ai_api_key": "",
+  "open_ai_api_base": "",
+  "deepseek_api_key": "your_key",
+  "deepseek_api_base": "",
+  "dashscope_api_key": "sk-ff8683951e2a4994adb9ee89ee555750",
+  "zhipu_ai_api_key": "",
+  "moonshot_api_key": "",
+  "ark_api_key": "",
+  "agent": true,
+  "agent_workspace": "/home/lc/my_ros_projects/agent/miniOpenClaw/data",
+  "agent_max_context_tokens": 50000,
+  "agent_max_context_turns": 20,
+  "agent_max_steps": 20,
+  "enable_thinking": false,
+  "knowledge": true,
+  "conversation_persistence": true,
+  "clear_memory_commands": [
+    "#清除记忆"
+  ],
+  "single_chat_prefix": [
+    "bot",
+    "@bot"
+  ],
+  "subscribe_msg": "",
+  "appdata_dir": "",
+  "miniopenclaw_api_base": "http://127.0.0.1:8002"
+}

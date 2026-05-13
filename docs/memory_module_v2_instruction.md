@@ -23,7 +23,7 @@ ensure_schema()
 或直接执行 SQL：
 
 ```bash
-psql -f backend/memory_module_v2/storage/schema.sql
+psql -f api_server/memory_module_v2/storage/schema.sql
 ```
 
 ### 2. 蒸馏 Session
